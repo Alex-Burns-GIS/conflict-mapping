@@ -1,0 +1,83 @@
+# -----------------------------------------------------------------------------
+#  Node / NPM / Yarn
+# -----------------------------------------------------------------------------
+node_modules/
+dist/
+build/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-error.log*
+
+# If you have a lock file that you do want tracked, remove it above.
+
+# -----------------------------------------------------------------------------
+#  TypeScript
+# -----------------------------------------------------------------------------
+*.tsbuildinfo
+
+# -----------------------------------------------------------------------------
+#  Environment / Credentials
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# Explanation:
+#  - `.env` or `.env.*` should be ignored to protect secrets (API keys, DB passwords)
+#  - Keep an `.env.example` to share config structure without real credentials
+
+# -----------------------------------------------------------------------------
+#  Logs & Reports
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+coverage/
+nyc_output/
+*.out
+*.trace
+
+# -----------------------------------------------------------------------------
+#  Operating System Junk
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.swn
+*.swd
+*.swm
+*.swt
+
+# macOS Finder attributes
+._*
+
+# -----------------------------------------------------------------------------
+#  Editor / IDE Specific
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------------------------------------------------------
+#  Docker
+# -----------------------------------------------------------------------------
+# If you have generated Dockerfiles, Docker build cache, etc., to ignore:
+docker-compose.override.yml
+docker-compose.override*.yml
+.dockerignore
+# Docker container logs
+**/docker-logs/
+# Images, volumes, etc. are not typically stored in the repo anyway, but you can 
+# add other lines if your build outputs ephemeral artifacts.
+
+# -----------------------------------------------------------------------------
+#  Misc
+# -----------------------------------------------------------------------------
+*.bak
+*.tmp
+
+# If using a monorepo tool like Lerna or Turborepo, you may want to ignore 
+# additional directories such as /packages/*/dist or .turbo/*
