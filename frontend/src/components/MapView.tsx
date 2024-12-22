@@ -1,20 +1,19 @@
-// frontend/src/components/MapView.tsx
 import React from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
+import 'leaflet/dist/leaflet.css';
 import PolygonMap from './PolygonMap';
 
 const MapView: React.FC = () => {
+  console.log('MapView rendered');
   return (
-    <div className="map-container">
-      {/* Ensure MapContainer occupies the full height and width */}
+    <div className="h-full w-full" style={{ height: '100vh' }}>
       <MapContainer
-        center={[20, 0]} // Center of the map
-        zoom={2} // Default zoom level
-        style={{ height: '100%', width: '100%' }} // Ensures full coverage
+        center={[20, 0]}
+        zoom={2}
+        className="h-full w-full"
       >
         <TileLayer
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+          attribution='© <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <PolygonMap />
