@@ -20,17 +20,21 @@ This project is a **conflict-analysis geospatial dashboard** using Docker for Po
 ---
 
 ## Project Structure
+
+```
 war-data-map/ 
 ├── backend/ 
-│ └── src/ 
+│   └── src/ 
 ├── frontend/ 
-│ └── src/ 
+│   └── src/ 
 ├── db-seed/ 
-│ ├── Dockerfile 
-│ └── seed.sh 
+│   ├── Dockerfile 
+│   └── seed.sh 
 ├── datasets/ 
 ├── docker-compose.yml 
 └── README.md
+```
+
 
 - **backend**: Node/Express server.  
 - **frontend**: React + Vite + Leaflet app.  
