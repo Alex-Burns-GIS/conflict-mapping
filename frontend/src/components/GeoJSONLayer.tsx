@@ -26,7 +26,13 @@ const GeoJSONLayer: React.FC<GeoJSONLayerProps> = ({ data }) => {
         }
       },
     });
+
     geojsonLayer.addTo(map);
+
+    // Auto-fit the map to the GeoJSON data bounds
+    if (data.features.length > 0) {
+      map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20] });
+    }
 
     // Clean up
     return () => {

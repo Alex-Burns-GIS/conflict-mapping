@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
         gid,
         name,
         ST_AsGeoJSON(geom)::json AS geometry
-      FROM public.country_polygons
+      FROM public.ne_10m_admin_0_countries
     `;
     const result = await pool.query(query);
 

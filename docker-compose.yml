@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgis/postgis:14-3.2
+    container_name: conflict_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Flnqrt5&78$%"
+      POSTGRES_DB: geo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  db-seed:
+    build:
+      # Build context is the db-seed folder
+      context: ./db-seed
+      # Dockerfile is in the same folder
+      dockerfile: Dockerfile
+    container_name: conflict_db_seed
+    volumes:
+      - ./datasets:/datasets  # Mount local datasets
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: "Flnqrt5&78$%"
+      PGDATABASE: geo_db
+      PGHOST: db
+      PGPORT: 5432
+    depends_on:
+      - db
+    # We won't start db-seed automatically on `docker-compose up`.
+    # We'll run it manually with `docker-compose run db-seed` whenever needed.
+
+  backend:
+    build: ./backend
+    container_name: conflict_backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PGUSER=postgres
+      - PGHOST=db
+      - PGPASSWORD=Flnqrt5&78$%
+      - PGDATABASE=geo_db
+      - PGPORT=5432
+    depends_on:
+      - db
+    # Optional: If you want hot reload for the backend too, you can do:
+    # volumes:
+    #   - ./backend:/app
+    # command: ["npm", "run", "dev"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: conflict_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+    # Run dev server with hot reload. This ensures we listen on 0.0.0.0
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+volumes:
+  db-data:
