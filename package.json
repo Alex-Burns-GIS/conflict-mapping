@@ -1,0 +1,10 @@
+{
+    "name": "war-data-map",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+      "dev-server": "docker-compose up -d db backend frontend tileserver",
+      "stop": "docker-compose down"
+    }
+  }
+  

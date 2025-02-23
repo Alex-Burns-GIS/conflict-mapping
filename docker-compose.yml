@@ -60,8 +60,17 @@ services:
       - backend
     volumes:
       - ./frontend:/app
-    # Run dev server with hot reload. This ensures we listen on 0.0.0.0
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+  tileserver:
+    image: klokantech/tileserver-gl
+    container_name: conflict_tileserver
+    volumes:
+      - ./tiles:/data 
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
 
 volumes:
   db-data:
