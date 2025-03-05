@@ -140,14 +140,56 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
     map.on('load', () => {
       addDebug("Map base style loaded successfully");
 
-      // Test a specific tile request directly for diagnostics
+      // Inspect the vector tile structure to debug the source-layer name
+      const inspectVectorTile = async () => {
+        try {
+          addDebug("Inspecting vector tile structure...");
+          
+          // Use a more targeted tile that might have data (Africa)
+          const url = `${martinUrlBase}/public.recent_conflicts/4/8/8.pbf`;
+          
+          const response = await fetch(url);
+          if (!response.ok) {
+            addDebug(`❌ Failed to fetch tile: ${response.status}`);
+            return;
+          }
+          
+          const arrayBuffer = await response.arrayBuffer();
+          
+          // Use maplibregl's own VectorTile parser (if available)
+          try {
+            // This is a more direct diagnostic approach
+            addDebug(`Vector tile size: ${arrayBuffer.byteLength} bytes`);
+            
+            // Log the first few bytes for inspection
+            const dataView = new DataView(arrayBuffer);
+            let hexDump = "First 16 bytes: ";
+            for (let i = 0; i < Math.min(16, arrayBuffer.byteLength); i++) {
+              hexDump += dataView.getUint8(i).toString(16).padStart(2, '0') + ' ';
+            }
+            addDebug(hexDump);
+            
+            // This would help determine if the tile seems valid
+            addDebug("Vector tile seems valid, now trying to render");
+          } catch (e) {
+            addDebug(`Error inspecting tile: ${e.message}`);
+          }
+        } catch (e) {
+          addDebug(`Error in tile inspection: ${e.message}`);
+        }
+      };
+      
+      // Test multiple tile requests to find data
       const testDirectFetch = async () => {
         try {
-          // Try to fetch specific zoom level tiles that would have visible data
-          // Using z=4 instead of z=0 to get smaller, more manageable tiles
+          // Try to fetch tiles from various areas that might have conflict data
           const urls = [
-            `${martinUrlBase}/public.conflict_events/4/8/8.pbf`,
+            // Africa tiles
             `${martinUrlBase}/public.recent_conflicts/4/8/8.pbf`,
+            // Middle East tiles 
+            `${martinUrlBase}/public.recent_conflicts/5/19/12.pbf`,
+            // Try another area in Africa
+            `${martinUrlBase}/public.recent_conflicts/5/17/16.pbf`,
           ];
           
           for (const url of urls) {
@@ -185,6 +227,29 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
           maxzoom: 15
         });
 
+        // Add a way to diagnose vector tile loading
+        map.on('sourcedata', (e) => {
+          if (e.isSourceLoaded && e.sourceId && typeof e.tile === 'object') {
+            addDebug(`Source ${e.sourceId} loaded tile: ${JSON.stringify(e.tile || {})}`);
+            
+            // Try to get the source layer names directly from the maplibre tile
+            if (e.sourceId === 'recent-conflicts') {
+              try {
+                const layers = map.getStyle().layers;
+                const sourceLayers = layers
+                  .filter(layer => layer.source === 'recent-conflicts')
+                  .map(layer => layer['source-layer']);
+                
+                if (sourceLayers.length > 0) {
+                  addDebug(`Source layers for recent-conflicts: ${sourceLayers.join(', ')}`);
+                }
+              } catch (err) {
+                // Ignore errors
+              }
+            }
+          }
+        });
+        
         // Add other sources with appropriate zoom constraints
         map.addSource("battles", {
           type: "vector", 
@@ -217,11 +282,16 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
       // Add conflict layers
       try {
         // Recent conflicts layer
-        map.addLayer({
+                  // Run the vector tile inspector
+          inspectVectorTile();
+          
+          // Based on the vector tile inspection, Martin is using fully qualified names
+          // including schema prefix as the source-layer name
+          map.addLayer({
           id: "recent-conflicts-layer",
           type: "circle",
           source: "recent-conflicts",
-          "source-layer": "recent_conflicts",
+          "source-layer": "public.recent_conflicts", // Include schema prefix
           minzoom: 4,  // Increased to match source minzoom
           paint: {
             "circle-radius": [
@@ -257,7 +327,7 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
           id: "battles-layer",
           type: "circle",
           source: "battles",
-          "source-layer": "battles",
+          "source-layer": "public.battles",
           minzoom: 4,
           paint: {
             "circle-radius": [
@@ -283,7 +353,7 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
           id: "violence-layer",
           type: "circle",
           source: "violence",
-          "source-layer": "violence_against_civilians",
+          "source-layer": "public.violence_against_civilians",
           minzoom: 4,
           paint: {
             "circle-radius": [
@@ -309,7 +379,7 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
           id: "high-fatality-layer",
           type: "circle",
           source: "high-fatality",
-          "source-layer": "high_fatality_events",
+          "source-layer": "public.high_fatality_events",
           minzoom: 3,
           paint: {
             "circle-radius": [
@@ -401,6 +471,12 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
                 return;
               }
               
+              // Determine the correct source-layer name (including schema)
+              const sourceLayerName = sourceId === "recent-conflicts" ? "public.recent_conflicts" :
+                                     sourceId === "battles" ? "public.battles" :
+                                     sourceId === "violence" ? "public.violence_against_civilians" :
+                                     "public.high_fatality_events";
+              
               // Check rendered features first
               const features = map.queryRenderedFeatures({ layers: [sourceId + "-layer"] });
               if (features && features.length > 0) {
@@ -409,7 +485,9 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
               } else {
                 // If no rendered features, check if any source features are available
                 try {
-                  const sourceFeatures = map.querySourceFeatures(sourceId);
+                  const sourceFeatures = map.querySourceFeatures(sourceId, {
+                    sourceLayer: sourceLayerName
+                  });
                   if (sourceFeatures && sourceFeatures.length > 0) {
                     addDebug(`ℹ️ Source ${sourceId} has ${sourceFeatures.length} features loaded but none rendered`);
                     // The data is there but not rendering - could be due to:
@@ -763,13 +841,26 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
           >
             Asia
           </button>
+          {/* Add specific conflict hotspots for testing */}
+          <button 
+            className="bg-red-500 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded"
+            onClick={() => zoomToRegion("somalia")}
+          >
+            Somalia
+          </button>
+          <button 
+            className="bg-red-500 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded"
+            onClick={() => zoomToRegion("syria")}
+          >
+            Syria
+          </button>
         </div>
       </div>
       
       {/* Test buttons */}
       <div className="absolute bottom-4 left-4 bg-white p-2 rounded shadow-lg z-10">
         <div className="flex flex-col space-y-2">
-          <div className="text-xs font-bold mb-1">Note: Data only visible at zoom level 4+</div>
+          <div className="text-xs font-bold mb-1">Note: Data only visible at zoom level 4+ in conflict areas</div>
           <button 
             className="bg-red-500 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded"
             onClick={testMartinServer}
@@ -781,6 +872,21 @@ const VectorTileLayer: React.FC<VectorTileLayerProps> = ({ containerId }) => {
             onClick={reloadData}
           >
             Force Reload Data
+          </button>
+          <button 
+            className="bg-purple-500 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded"
+            onClick={() => {
+              if (mapRef.current) {
+                // Try to add a simple marker to test rendering
+                addDebug("Adding test marker at current center...");
+                const center = mapRef.current.getCenter();
+                new maplibregl.Marker({color: "#FF0000"})
+                  .setLngLat([center.lng, center.lat])
+                  .addTo(mapRef.current);
+              }
+            }}
+          >
+            Add Test Marker
           </button>
         </div>
         {tileTestResults && (
