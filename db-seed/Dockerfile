@@ -1,16 +1,30 @@
-# db-seed/Dockerfile
+# Start from Ubuntu base image for better control
+FROM ubuntu:22.04
 
-# Start from PostGIS base image
-FROM postgis/postgis:14-3.2
+# Avoid prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install additional tools: gdal-bin, unzip, and the postgis package that includes shp2pgsql
+# Install PostgreSQL client, PostGIS, and all required tools
 RUN apt-get update && \
-    apt-get install -y gdal-bin unzip postgis && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y \
+    postgresql-client \
+    postgis \
+    postgresql-14-postgis-3 \
+    gdal-bin \
+    unzip \
+    curl \
+    wget \
+    bc \
+    ncal \
+    jq \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy your seeding script into the container
-COPY seed.sh /seed.sh
-RUN chmod +x /seed.sh
+# Verify shp2pgsql is installed
+RUN which shp2pgsql || (echo "shp2pgsql not found"; exit 1)
 
-# Default command: run the seed script
-CMD ["/seed.sh"]
+# Set working directory
+WORKDIR /app
+
+# Keep container running for interactive use
+CMD ["tail", "-f", "/dev/null"]

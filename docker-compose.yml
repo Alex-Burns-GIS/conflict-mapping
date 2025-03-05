@@ -13,13 +13,12 @@ services:
 
   db-seed:
     build:
-      # Build context is the db-seed folder
       context: ./db-seed
-      # Dockerfile is in the same folder
       dockerfile: Dockerfile
     container_name: conflict_db_seed
     volumes:
-      - ./datasets:/datasets  # Mount local datasets
+      - ./db-seed:/app
+      - ./datasets:/datasets  # Mount local datasets directory
     environment:
       PGUSER: postgres
       PGPASSWORD: "Flnqrt5&78$%"
@@ -28,8 +27,8 @@ services:
       PGPORT: 5432
     depends_on:
       - db
-    # We won't start db-seed automatically on `docker-compose up`.
-    # We'll run it manually with `docker-compose run db-seed` whenever needed.
+    # We won't start db-seed automatically on `docker-compose up`
+    # We'll run it manually with `docker-compose run db-seed bash -c "/app/seed_conflict_data.sh"`
 
   backend:
     build: ./backend
@@ -42,12 +41,12 @@ services:
       - PGPASSWORD=Flnqrt5&78$%
       - PGDATABASE=geo_db
       - PGPORT=5432
+      - PORT=4000
+    volumes:
+      - ./backend:/app
     depends_on:
       - db
-    # Optional: If you want hot reload for the backend too, you can do:
-    # volumes:
-    #   - ./backend:/app
-    # command: ["npm", "run", "dev"]
+    command: ["npm", "run", "dev"]
 
   frontend:
     build:
@@ -56,21 +55,34 @@ services:
     container_name: conflict_frontend
     ports:
       - "5173:5173"
-    depends_on:
-      - backend
     volumes:
       - ./frontend:/app
+    depends_on:
+      - backend
+      - martin
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
-  tileserver:
-    image: klokantech/tileserver-gl
-    container_name: conflict_tileserver
-    volumes:
-      - ./tiles:/data 
+  # Replace TileServer-GL with Martin
+  martin:
+    image: urbica/martin
+    container_name: conflict_martin
+    restart: unless-stopped
+    environment:
+      # Use direct password instead of URL encoding which is causing issues
+      - "DATABASE_URL=postgres://postgres:Flnqrt5%2678%24%25@db:5432/geo_db"
+      - WATCH_MODE=true
+      - POOL_SIZE=20
+      - KEEP_ALIVE=true
+      - WORKER_PROCESSES=4
+      - TILE_BUFFER_SIZE=16
+      - MAX_AGE=0
     ports:
-      - "8080:80"
+      - "3001:3000"
     depends_on:
       - db
 
 volumes:
   db-data:
+    name: war-data-map_db-data
+
+ 
